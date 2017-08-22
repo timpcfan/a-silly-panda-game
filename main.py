@@ -11,8 +11,8 @@ SCREEN_SIZE = (400, 600)
 pygame.init()
 clock = pygame.time.Clock()
 screen = pygame.display.set_mode(SCREEN_SIZE, 0, 32)
-font_small = pygame.font.Font("Monaco.ttf", 32)
-font_big = pygame.font.Font("Monaco.ttf", 40)
+font_small = pygame.font.Font("font/Monaco.ttf", 32)
+font_big = pygame.font.Font("font/Monaco.ttf", 40)
 
 # load images
 pic_heart = pygame.image.load('pic/heart.png').convert_alpha()
