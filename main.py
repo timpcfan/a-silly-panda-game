@@ -4,11 +4,8 @@ from pygame.math import Vector2
 from sys import exit
 from random import randint
 
+# screen size
 SCREEN_SIZE = (400, 600)
-heart_group = pygame.sprite.Group()
-badball_group = pygame.sprite.Group()
-fireball_group = pygame.sprite.Group()
-bulletpacket_group = pygame.sprite.Group()
 
 # setup
 pygame.init()
@@ -17,6 +14,7 @@ screen = pygame.display.set_mode(SCREEN_SIZE, 0, 32)
 font_small = pygame.font.Font("Monaco.ttf", 32)
 font_big = pygame.font.Font("Monaco.ttf", 40)
 
+# load images
 pic_heart = pygame.image.load('pic/heart.png').convert_alpha()
 pic_panda = pygame.image.load('pic/xm.png').convert_alpha()
 pic_panda2 = pygame.image.load('pic/xm2.png').convert_alpha()
@@ -27,27 +25,11 @@ pic_bulletpacket = pygame.image.load('pic/bulletpacket.png').convert_alpha()
 pic_freestyle_s = pygame.image.load('pic/freestyle_small.png').convert_alpha()
 pic_freestyle_l = pygame.image.load('pic/freestyle_large.png').convert_alpha()
 
-
-def random_spawn():
-    r = randint(1, 100)
-    if r >= 98:
-        spawn_gameitem('BulletPacket', 300, 500)
-    elif r >= 80:
-        spawn_gameitem('Badball', 200, 400)
-    else:
-        spawn_gameitem('Heart', 100, 400)
-
-
-def spawn_gameitem(type, speed_y_min=100, speed_y_max=400):
-    ItemClass = globals()[type]
-    item_width = globals()['pic_' + type.lower()].get_width()
-    init_x = randint(0, SCREEN_SIZE[0] - item_width)
-    if init_x < (SCREEN_SIZE[0] - item_width) / 2:
-        speed_x = randint(0, 60)
-    else:
-        speed_x = randint(-60, 0)
-    speed_y = randint(speed_y_min, speed_y_max)
-    ItemClass((init_x, 0), (speed_x, speed_y))
+# init groups
+heart_group = pygame.sprite.Group()
+badball_group = pygame.sprite.Group()
+fireball_group = pygame.sprite.Group()
+bulletpacket_group = pygame.sprite.Group()
 
 
 class GameItem(pygame.sprite.Sprite):
@@ -91,7 +73,7 @@ class BulletPacket(GameItem):
         super(BulletPacket, self).__init__('BulletPacket', pic_bulletpacket, position, speed)
 
 
-class Panda(GameItem):
+class Panda(pygame.sprite.Sprite):
     def __init__(self, position):
         pygame.sprite.Sprite.__init__(self)
         self.image = pic_panda
@@ -113,7 +95,7 @@ class Panda(GameItem):
         self.image_changed_time = pygame.time.get_ticks()
         self.image_id = 2
 
-    def get_strike(self):
+    def get_badball(self):
         self.image = pic_panda3
         self.image_changed_time = pygame.time.get_ticks()
         self.image_id = 3
@@ -122,11 +104,33 @@ class Panda(GameItem):
         Fireball(self.rect.midtop)
 
 
-# the player
+# init the player
 panda_sprite = Panda((SCREEN_SIZE[0] / 2, SCREEN_SIZE[1]))
 
 # collide checker
 collide_circle = pygame.sprite.collide_circle_ratio(0.9)
+
+
+def random_spawn():
+    r = randint(1, 100)
+    if r >= 98:
+        spawn_gameitem('BulletPacket', 300, 500)
+    elif r >= 80:
+        spawn_gameitem('Badball', 200, 400)
+    else:
+        spawn_gameitem('Heart', 100, 400)
+
+
+def spawn_gameitem(type, speed_y_min=100, speed_y_max=400):
+    ItemClass = globals()[type]
+    item_width = globals()['pic_' + type.lower()].get_width()
+    init_x = randint(0, SCREEN_SIZE[0] - item_width)
+    if init_x < (SCREEN_SIZE[0] - item_width) / 2:
+        speed_x = randint(0, 60)
+    else:
+        speed_x = randint(-60, 0)
+    speed_y = randint(speed_y_min, speed_y_max)
+    ItemClass((init_x, 0), (speed_x, speed_y))
 
 
 def status_init():
@@ -154,7 +158,7 @@ def item_update(status, time_passed):
     get_badballs_list = pygame.sprite.spritecollide(panda_sprite, badball_group, True, collided=collide_circle)
     if len(get_badballs_list) > 0:
         status['life'] -= 1
-        panda_sprite.get_strike()
+        panda_sprite.get_badball()
     fireball_group.update(time_passed)
     kill_ball_dict = pygame.sprite.groupcollide(fireball_group, badball_group, True, True, collide_circle)
     status['scores'] += len(kill_ball_dict) * 500
