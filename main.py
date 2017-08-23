@@ -284,7 +284,6 @@ def gameover(status):
 while True:
     status = status_init()
     timer_for_spawn_item = 0.0
-    spawn_gameitem('FreeStyle')
     # game loop
     while status['life'] > 0:
 
