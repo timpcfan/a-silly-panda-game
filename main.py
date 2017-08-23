@@ -8,6 +8,7 @@ from random import randint
 SCREEN_SIZE = (400, 600)
 
 # setup
+pygame.mixer.pre_init(44100, 16, 2, 4096)
 pygame.init()
 clock = pygame.time.Clock()
 screen = pygame.display.set_mode(SCREEN_SIZE, 0, 32)
@@ -25,6 +26,15 @@ pic_fireball = pygame.image.load('pic/fireball.png').convert_alpha()
 pic_bulletpacket = pygame.image.load('pic/bulletpacket.png').convert_alpha()
 pic_freestyle = pygame.image.load('pic/freestyle_small.png').convert_alpha()
 pic_freestyle_l = pygame.image.load('pic/freestyle_large.png').convert_alpha()
+
+# load sounds
+sound_fire = pygame.mixer.Sound('sound/fire.ogg')
+sound_heart = pygame.mixer.Sound('sound/heart.ogg')
+sound_freestyle = pygame.mixer.Sound('sound/freestyle.ogg')
+sound_bulletpacket = pygame.mixer.Sound('sound/bulletpacket.ogg')
+sound_hurt = pygame.mixer.Sound('sound/hurt.ogg')
+sound_boom = pygame.mixer.Sound('sound/boom.ogg')
+sound_nobullet = pygame.mixer.Sound('sound/nobullet.ogg')
 
 # init groups
 heart_group = pygame.sprite.Group()
@@ -63,6 +73,9 @@ class Badball(GameItem):
         super(Badball, self).__init__('Badball', pic_badball, position, speed)
         self.radius = 45
 
+    def play_sound_die(self):
+        sound_boom.play()
+
 
 class Fireball(GameItem):
     def __init__(self, position):
@@ -91,6 +104,7 @@ class Panda(pygame.sprite.Sprite):
         self.freestyle_last_time = 6000  # ms
         self.radius = 30
         self.is_freestyle_mode = False
+        self.bullet_num = 10
 
     def update(self):
         x, y = pygame.mouse.get_pos()
@@ -123,7 +137,15 @@ class Panda(pygame.sprite.Sprite):
         self.freestyle_since = pygame.time.get_ticks()
 
     def shoot(self):
-        Fireball(self.rect.midtop)
+        if self.bullet_num > 0:
+            Fireball(self.rect.midtop)
+            self.bullet_num -= 1
+            self.play_sound('fire')
+        else:
+            self.play_sound('nobullet')
+
+    def play_sound(self, type):
+        globals()['sound_' + type].play()
 
 
 # init the player
@@ -162,11 +184,11 @@ def status_init():
         'life':3,
         'scores':0,
         'spawn_speed':3.0,  # entites per second
-        'bullet_num':10,
     }
     heart_group.empty()
     badball_group.empty()
     fireball_group.empty()
+    panda_sprite.bullet_num = 10
     return status
 
 
@@ -179,24 +201,29 @@ def item_update(status, time_passed):
         status['scores'] += hearts_num * 100
         status['spawn_speed'] += hearts_num * 0.05
         panda_sprite.get_heart()
+        panda_sprite.play_sound('heart')
     # update badballs
     badball_group.update(time_passed)
     get_badballs_list = pygame.sprite.spritecollide(panda_sprite, badball_group, True, collided=collide_circle)
     if len(get_badballs_list) > 0:
         status['life'] -= 1
         panda_sprite.get_badball()
+        panda_sprite.play_sound('hurt')
     # update fireballs
     fireball_group.update(time_passed)
     kill_ball_dict = pygame.sprite.groupcollide(fireball_group, badball_group, True, True, collide_circle)
     status['scores'] += len(kill_ball_dict) * 500
+    if kill_ball_dict: sound_boom.play()
     # update bulletpackets
     bulletpacket_group.update(time_passed)
     get_bullet_list = pygame.sprite.spritecollide(panda_sprite, bulletpacket_group, True, collide_circle)
-    status['bullet_num'] = min(10, status['bullet_num'] + len(get_bullet_list) * 5)
+    panda_sprite.bullet_num = min(10, panda_sprite.bullet_num + len(get_bullet_list) * 5)
+    if get_bullet_list: panda_sprite.play_sound('bulletpacket')
     # update freestyles
     freestyle_group.update(time_passed)
     get_freestyle_list = pygame.sprite.spritecollide(panda_sprite, freestyle_group, True, collide_circle)
-    if len(get_freestyle_list):
+    if get_freestyle_list:
+        panda_sprite.play_sound('freestyle')
         panda_sprite.get_freestyle()
     # update player
     panda_sprite.update()
@@ -213,11 +240,12 @@ def display_update(status):
     # text update
     score_text = font_big.render(str(status['scores']), True, (20, 20, 20))
     life_text = font_big.render(str(status['life']), True, (219, 77, 109))
-    bullet_num_text = font_big.render('{:02}/10'.format(status['bullet_num']), True, (255, 201, 14))
+    bullet_num_text = font_big.render('{:02}/10'.format(panda_sprite.bullet_num), True, (255, 201, 14))
     # freestyle big timer
     if panda_sprite.is_freestyle_mode:
         ftime_text = font_huge.render(
-            '%.3f' % ((panda_sprite.freestyle_last_time - pygame.time.get_ticks() + panda_sprite.freestyle_since)/1000),
+            '%.3f' % (
+                (panda_sprite.freestyle_last_time - pygame.time.get_ticks() + panda_sprite.freestyle_since) / 1000),
             True, (203, 27, 69))
         screen.blit(ftime_text, (SCREEN_SIZE[0] / 2 - ftime_text.get_width() / 2,
                                  SCREEN_SIZE[1] / 2 - ftime_text.get_height() / 2))
@@ -265,9 +293,7 @@ while True:
             exit()
         if event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
-                if status['bullet_num'] > 0:
-                    panda_sprite.shoot()
-                    status['bullet_num'] -= 1
+                panda_sprite.shoot()
 
         # get the time last frame cost in seconds
         time_passed = clock.tick() / 1000
