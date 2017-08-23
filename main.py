@@ -10,6 +10,7 @@ SCREEN_SIZE = (400, 600)
 # setup
 pygame.mixer.pre_init(44100, 16, 2, 4096)
 pygame.init()
+pygame.display.set_caption('silly panda game')
 clock = pygame.time.Clock()
 screen = pygame.display.set_mode(SCREEN_SIZE, 0, 32)
 font_small = pygame.font.Font("font/Monaco.ttf", 32)
@@ -257,6 +258,28 @@ def display_update(status):
     pygame.display.update()
 
 
+def start_page():
+    screen.fill((255, 255, 255))
+    title_text = font_huge.render('PANDA', True, (181, 73, 91))
+    title_text2 = font_huge.render('SHOOTING', True, (181, 73, 91))
+    start_text = font_big.render('START', True, (251, 150, 110))
+    r = start_text.get_rect()
+    r.center = (SCREEN_SIZE[0] / 2, SCREEN_SIZE[1] / 2 + 100)
+    pygame.draw.rect(screen, (219, 77, 109), r)
+    screen.blit(title_text, (SCREEN_SIZE[0] / 2 - title_text.get_width() / 2, 25 + title_text.get_height()))
+    screen.blit(title_text2, (SCREEN_SIZE[0] / 2 - title_text2.get_width() / 2, 85 + title_text2.get_height()))
+    screen.blit(start_text, r)
+    pygame.display.update()
+
+    while True:
+        event = pygame.event.poll()
+        if event.type == QUIT:
+            exit()
+        if event.type == MOUSEBUTTONDOWN:
+            if event.button == 1 and r.collidepoint(event.pos):
+                break
+
+
 def gameover(status):
     screen.fill((255, 255, 255))
     SCORE_text = font_big.render('SCORE', True, (20, 20, 20))
@@ -281,6 +304,7 @@ def gameover(status):
 
 
 # main
+start_page()
 while True:
     status = status_init()
     timer_for_spawn_item = 0.0
